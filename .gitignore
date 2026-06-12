@@ -9,6 +9,7 @@
 /storage/framework/sessions/
 /storage/framework/views/
 /storage/logs/
+*.sqlite
 Homestead.json
 Homestead.yaml
 .DS_Store
