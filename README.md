@@ -1,58 +1,268 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# SyncFlow
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+A collaborative workspace where teams create projects, assign tasks, upload attachments, and track progress.
 
-## About Laravel
+---
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## Tech Stack
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+| Layer       | Technology                              |
+|-------------|-----------------------------------------|
+| Backend     | PHP 8.3, Laravel 11 (MVC, RESTful API) |
+| Database    | SQLite (dev) / MySQL 8.0 (production)   |
+| Frontend    | Svelte, Tailwind CSS                     |
+| Auth        | Laravel Sanctum (token-based API auth)  |
+| File Storage| AWS S3 (via Flysystem)                  |
+| DevOps      | GitHub Actions CI/CD                    |
+| Infrastructure | AWS EC2, RDS, S3                     |
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+---
 
-## Learning Laravel
+## Phase 1 — Planning & Database Schema (Complete ✅)
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+### 1.1 Git Repository
 
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+| Action | Detail |
+|--------|--------|
+| `git init` | Repository initialized at `/home/abdelghafaar/Desktop/Abdo/SyncFlow` |
+| `.gitignore` | Excludes `vendor/`, `node_modules/`, `.env`, `*.sqlite`, `storage/`, `frontend/dist/` |
+| **Branch: `main`** | Production-ready code |
+| **Branch: `dev`** | Integration branch (default for PRs) |
+| **Branch: `feature/database-schema`** | Schema work — merged into `dev` via `--no-ff` |
 
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
+### 1.2 Laravel Scaffold
 
-## Agentic Development
-
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
-
-```bash
-composer require laravel/boost --dev
-
-php artisan boost:install
+```
+composer create-project laravel/laravel .
+composer require laravel/sanctum
 ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+Laravel 11 boilerplate installed with:
+- Sanctum for API token auth
+- SQLite database at `database/syncflow.sqlite`
+- `.env` configured with `APP_NAME=SyncFlow`, commented MySQL config ready
 
-## Contributing
+### 1.3 Database Schema — 6 Custom Tables + Users Enhancement
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+#### `users` (modified default migration)
 
-## Code of Conduct
+| Column | Type | Constraints |
+|--------|------|-------------|
+| id | BIGINT UNSIGNED | PK, AUTO_INCREMENT |
+| name | VARCHAR(255) | NOT NULL |
+| email | VARCHAR(255) | UNIQUE, NOT NULL |
+| email_verified_at | TIMESTAMP | NULLABLE |
+| password | VARCHAR(255) | NOT NULL |
+| avatar_url | VARCHAR(255) | NULLABLE |
+| timezone | VARCHAR(50) | NULLABLE |
+| remember_token | VARCHAR(100) | NULLABLE |
+| created_at / updated_at | TIMESTAMP | |
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+#### `projects`
 
-## Security Vulnerabilities
+| Column | Type | Constraints |
+|--------|------|-------------|
+| id | BIGINT UNSIGNED | PK |
+| name | VARCHAR(255) | NOT NULL |
+| description | TEXT | NULLABLE |
+| owner_id | BIGINT UNSIGNED | FK → users, CASCADE DELETE, **INDEXED** |
+| status | ENUM('active','archived','completed') | DEFAULT 'active', **INDEXED** |
+| timestamps | | |
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+#### `project_members`
 
-## License
+| Column | Type | Constraints |
+|--------|------|-------------|
+| id | BIGINT UNSIGNED | PK |
+| project_id | BIGINT UNSIGNED | FK → projects, CASCADE DELETE, **INDEXED** |
+| user_id | BIGINT UNSIGNED | FK → users, CASCADE DELETE, **INDEXED** |
+| role | ENUM('owner','editor','viewer') | DEFAULT 'viewer' |
+| timestamps | | |
+| | | **UNIQUE(project_id, user_id)** |
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+#### `tasks`
+
+| Column | Type | Constraints |
+|--------|------|-------------|
+| id | BIGINT UNSIGNED | PK |
+| project_id | BIGINT UNSIGNED | FK → projects, CASCADE DELETE, **INDEXED** |
+| title | VARCHAR(255) | NOT NULL |
+| description | TEXT | NULLABLE |
+| status | ENUM('todo','in_progress','review','done') | DEFAULT 'todo', **INDEXED** |
+| priority | ENUM('low','medium','high','urgent') | DEFAULT 'medium' |
+| due_date | DATE | NULLABLE, **INDEXED** |
+| assigned_user_id | BIGINT UNSIGNED | FK → users, NULL ON DELETE, **INDEXED** |
+| created_by | BIGINT UNSIGNED | FK → users |
+| position | INT UNSIGNED | DEFAULT 0 |
+| timestamps | | |
+
+**Composite Indexes for Performance:**
+- `(project_id, status, position)` — board column queries
+- `(assigned_user_id, status)` — "My Tasks" filter
+
+#### `task_attachments`
+
+| Column | Type | Constraints |
+|--------|------|-------------|
+| id | BIGINT UNSIGNED | PK |
+| task_id | BIGINT UNSIGNED | FK → tasks, CASCADE DELETE, **INDEXED** |
+| user_id | BIGINT UNSIGNED | FK → users, CASCADE DELETE, **INDEXED** |
+| filename | VARCHAR(255) | NOT NULL |
+| original_name | VARCHAR(255) | NOT NULL |
+| mime_type | VARCHAR(127) | NOT NULL |
+| size | INT UNSIGNED | NOT NULL (bytes) |
+| s3_key | VARCHAR(512) | NOT NULL |
+| timestamps | | |
+
+#### `task_comments`
+
+| Column | Type | Constraints |
+|--------|------|-------------|
+| id | BIGINT UNSIGNED | PK |
+| task_id | BIGINT UNSIGNED | FK → tasks, CASCADE DELETE, **INDEXED** |
+| user_id | BIGINT UNSIGNED | FK → users, CASCADE DELETE, **INDEXED** |
+| content | TEXT | NOT NULL |
+| timestamps | | |
+
+### 1.4 Eloquent Models
+
+All models in `app/Models/` with `HasFactory` trait and full relationship definitions:
+
+| Model | Relationships |
+|-------|--------------|
+| `User` | `hasMany` ownedProjects, `belongsToMany` projects (via members), `hasMany` assignedTasks, `hasMany` createdTasks |
+| `Project` | `belongsTo` owner, `belongsToMany` members (with pivot `role`), `hasMany` tasks |
+| `Task` | `belongsTo` project, `belongsTo` assignedUser, `belongsTo` creator, `hasMany` attachments, `hasMany` comments |
+| `TaskAttachment` | `belongsTo` task, `belongsTo` user |
+| `TaskComment` | `belongsTo` task, `belongsTo` user |
+
+### 1.5 Factories
+
+| Factory | Faker Data |
+|---------|------------|
+| `UserFactory` | 25 users (1 demo admin: `abdelghafaar@syncflow.dev` / `password`) |
+| `ProjectFactory` | 10 projects with realistic names (Q3 Launch, Mobile Redesign, etc.) |
+| `TaskFactory` | ~200 tasks with varied status/priority/due dates |
+| `TaskAttachmentFactory` | ~70 attachments with realistic mime types |
+| `TaskCommentFactory` | ~400 comments across tasks |
+
+**Seeder Summary:**
+```
+Seeded:
+  - 25 users
+  - 10 projects
+  - 202 tasks
+  - 73 attachments
+  - 405 comments
+```
+
+### 1.6 Branch Structure
+
+```
+main ──── 774ccd1 chore: initialize git repo with .gitignore
+  └── dev ──── 6905e28 feat: merge database schema, models, factories, and seeders
+       └── feature/database-schema ──── 1189b8e feat: add database schema, models, factories, and seeders
+```
+
+---
+
+## Remaining Phases
+
+### Phase 2 — Backend Development & API (Pending)
+- [ ] Laravel Sanctum authentication (register, login, logout, user)
+- [ ] RESTful API controllers (Projects, Tasks, Attachments, Comments, Dashboard)
+- [ ] Form requests with validation
+- [ ] API resources for consistent JSON responses
+- [ ] AWS S3 file upload integration
+- [ ] Daily Digest command (overdue task summary email)
+- [ ] PHPUnit feature tests
+
+### Phase 3 — Frontend Development (Pending)
+- [ ] Svelte + Vite project scaffold
+- [ ] Tailwind CSS setup
+- [ ] Auth pages (login, register)
+- [ ] Dashboard page with stats
+- [ ] Project board with Kanban drag-and-drop
+- [ ] Task detail modal with comments + attachments
+- [ ] State management (Svelte stores + Axios API layer)
+- [ ] Loading, empty, error states for all views
+- [ ] jQuery legacy datepicker widget wrapper
+
+### Phase 4 — Deployment & CI/CD (Pending)
+- [ ] AWS EC2 + RDS + S3 provisioning
+- [ ] Nginx + PHP-FPM server configuration
+- [ ] GitHub Actions workflow (test + deploy)
+- [ ] Linux cron for task scheduler
+
+---
+
+## Development Setup
+
+```bash
+# Clone & install
+git clone <repo-url>
+cd SyncFlow
+composer install
+cp .env.example .env
+php artisan key:generate
+
+# Database
+touch database/syncflow.sqlite
+php artisan migrate --seed
+
+# Serve
+php artisan serve
+```
+
+### MySQL (Production)
+
+Uncomment MySQL block in `.env` and set credentials:
+```
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=syncflow
+DB_USERNAME=syncflow
+DB_PASSWORD=syncflow_pass
+```
+
+---
+
+## File Structure (Phase 1)
+
+```
+SyncFlow/
+├── .gitignore
+├── app/
+│   └── Models/
+│       ├── User.php
+│       ├── Project.php
+│       ├── Task.php
+│       ├── TaskAttachment.php
+│       └── TaskComment.php
+├── database/
+│   ├── factories/
+│   │   ├── UserFactory.php
+│   │   ├── ProjectFactory.php
+│   │   ├── TaskFactory.php
+│   │   ├── TaskAttachmentFactory.php
+│   │   └── TaskCommentFactory.php
+│   ├── migrations/
+│   │   ├── 0001_01_01_000000_create_users_table.php
+│   │   ├── 0001_01_01_000001_create_cache_table.php
+│   │   ├── 0001_01_01_000002_create_jobs_table.php
+│   │   ├── 0001_01_01_000003_create_projects_table.php
+│   │   ├── 0001_01_01_000004_create_tasks_table.php
+│   │   ├── 0001_01_01_000005_create_task_attachments_table.php
+│   │   └── 0001_01_01_000006_create_task_comments_table.php
+│   └── seeders/
+│       └── DatabaseSeeder.php
+├── config/
+│   ├── sanctum.php (published)
+│   └── ...
+├── routes/
+│   ├── api.php
+│   ├── web.php
+│   └── console.php
+└── README.md
+```
