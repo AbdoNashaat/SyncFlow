@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(php -v)",
+      "Bash(npm -v)",
+      "Bash(composer -V)",
+      "Bash(aws --version)",
+      "Bash(git --version)",
+      "Bash(mysql --version)",
+      "Bash(systemctl status *)",
+      "Bash(php -m)",
+      "Bash(php -r \"echo extension_loaded\\('pdo_mysql'\\) ? 'pdo_mysql: yes' : 'pdo_mysql: no';\")",
+      "Read(//home/abdelghafaar/.ssh/**)"
+    ]
+  }
+}
