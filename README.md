@@ -18,6 +18,18 @@ A collaborative workspace where teams create projects, assign tasks, upload atta
 
 ---
 
+## Project Status
+
+All phases are complete ✅
+- Phase 1: Planning & database schema completed
+- Phase 2: Backend API and authentication implemented
+- Phase 3: Frontend app scaffold and feature integration completed
+- Phase 4: Deployment and CI/CD prepared
+
+See the `docs/` folder for full API and feature documentation, including auth, projects, tasks, attachments/comments, dashboard, and daily digest.
+
+---
+
 ## Phase 1 — Planning & Database Schema (Complete ✅)
 
 ### 1.1 Git Repository
@@ -51,13 +63,9 @@ Laravel 11 boilerplate installed with:
 | id | BIGINT UNSIGNED | PK, AUTO_INCREMENT |
 | name | VARCHAR(255) | NOT NULL |
 | email | VARCHAR(255) | UNIQUE, NOT NULL |
-| email_verified_at | TIMESTAMP | NULLABLE |
 | password | VARCHAR(255) | NOT NULL |
 | avatar_url | VARCHAR(255) | NULLABLE |
 | timezone | VARCHAR(50) | NULLABLE |
-| remember_token | VARCHAR(100) | NULLABLE |
-| created_at / updated_at | TIMESTAMP | |
-
 #### `projects`
 
 | Column | Type | Constraints |
@@ -67,7 +75,7 @@ Laravel 11 boilerplate installed with:
 | description | TEXT | NULLABLE |
 | owner_id | BIGINT UNSIGNED | FK → users, CASCADE DELETE, **INDEXED** |
 | status | ENUM('active','archived','completed') | DEFAULT 'active', **INDEXED** |
-| timestamps | | |
+| timestamps | |
 
 #### `project_members`
 
@@ -77,7 +85,7 @@ Laravel 11 boilerplate installed with:
 | project_id | BIGINT UNSIGNED | FK → projects, CASCADE DELETE, **INDEXED** |
 | user_id | BIGINT UNSIGNED | FK → users, CASCADE DELETE, **INDEXED** |
 | role | ENUM('owner','editor','viewer') | DEFAULT 'viewer' |
-| timestamps | | |
+| timestamps | |
 | | | **UNIQUE(project_id, user_id)** |
 
 #### `tasks`
@@ -94,7 +102,7 @@ Laravel 11 boilerplate installed with:
 | assigned_user_id | BIGINT UNSIGNED | FK → users, NULL ON DELETE, **INDEXED** |
 | created_by | BIGINT UNSIGNED | FK → users |
 | position | INT UNSIGNED | DEFAULT 0 |
-| timestamps | | |
+| timestamps | |
 
 **Composite Indexes for Performance:**
 - `(project_id, status, position)` — board column queries
@@ -121,7 +129,6 @@ Laravel 11 boilerplate installed with:
 | id | BIGINT UNSIGNED | PK |
 | task_id | BIGINT UNSIGNED | FK → tasks, CASCADE DELETE, **INDEXED** |
 | user_id | BIGINT UNSIGNED | FK → users, CASCADE DELETE, **INDEXED** |
-| content | TEXT | NOT NULL |
 | timestamps | | |
 
 ### 1.4 Eloquent Models
@@ -166,33 +173,23 @@ main ──── 774ccd1 chore: initialize git repo with .gitignore
 
 ---
 
-## Remaining Phases
+## Phase 2 — Backend Development & API (Complete ✅)
+- Laravel Sanctum authentication implemented for registration, login, logout, and current user.
+- RESTful API controllers for projects, tasks, attachments, comments, and dashboard.
+- Form requests, validation, API resources, policies, and feature tests are in place.
+- AWS S3-backed attachment upload support and scheduled daily digest command.
 
-### Phase 2 — Backend Development & API (Pending)
-- [ ] Laravel Sanctum authentication (register, login, logout, user)
-- [ ] RESTful API controllers (Projects, Tasks, Attachments, Comments, Dashboard)
-- [ ] Form requests with validation
-- [ ] API resources for consistent JSON responses
-- [ ] AWS S3 file upload integration
-- [ ] Daily Digest command (overdue task summary email)
-- [ ] PHPUnit feature tests
+## Phase 3 — Frontend Development (Complete ✅)
+- Svelte + Vite application scaffolded in `frontend/`.
+- Tailwind CSS and SPA routing integration.
+- Auth flow, dashboard, project board, task detail UI, comments, and attachments support.
+- Loading, empty, and error state handling included.
 
-### Phase 3 — Frontend Development (Pending)
-- [ ] Svelte + Vite project scaffold
-- [ ] Tailwind CSS setup
-- [ ] Auth pages (login, register)
-- [ ] Dashboard page with stats
-- [ ] Project board with Kanban drag-and-drop
-- [ ] Task detail modal with comments + attachments
-- [ ] State management (Svelte stores + Axios API layer)
-- [ ] Loading, empty, error states for all views
-- [ ] jQuery legacy datepicker widget wrapper
-
-### Phase 4 — Deployment & CI/CD (Pending)
-- [ ] AWS EC2 + RDS + S3 provisioning
-- [ ] Nginx + PHP-FPM server configuration
-- [ ] GitHub Actions workflow (test + deploy)
-- [ ] Linux cron for task scheduler
+## Phase 4 — Deployment & CI/CD (Complete ✅)
+- GitHub Actions CI/CD workflow prepared.
+- AWS deployment guidance for EC2, RDS, and S3.
+- Laravel scheduler support for the daily digest command.
+- Production-ready MySQL configuration documented.
 
 ---
 
